@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Decor Catalogue</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Telegram Mini App JS SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 24px; background: #fafaff; }
+    .product { border: 1px solid #ddd; padding: 16px; margin-bottom: 16px; border-radius: 8px; }
+    .name { font-weight: bold; }
+    .btn { background: #30aabc; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+    .btn:active { background: #25818a; }
+    #cart-status { margin: 16px 0; color: #2e7d32; }
+  </style>
+</head>
+<body>
+  <h2>Home Decor Catalogue</h2>
+  <div id="catalogue">
+    <!-- Products will go here -->
+  </div>
+  <div id="cart-status"></div>
+
+  <script>
+    // Product catalogue
+    const products = [
+      { id: 1, name: "Velvet Curtains", price: 2499 },
+      { id: 2, name: "Printed Pillow Cover", price: 349 },
+      { id: 3, name: "Cotton Bedsheet", price: 1799 }
+    ];
+
+    // Render products
+    const catalogueDiv = document.getElementById('catalogue');
+    products.forEach(product => {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <span class="name">${product.name}</span><br>
+        Price: ₹${product.price}<br>
+        <button class="btn" onclick="addToCart(${product.id})">Add to Cart</button>
+      `;
+      catalogueDiv.appendChild(div);
+    });
+
+    // Add to cart handler
+    window.addToCart = function(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      document.getElementById('cart-status').textContent = `${product.name} added to cart!`;
+
+      // Prepare cart data for Telegram bot
+      const data = {
+        action: "add_to_cart",
+        product_id: product.id,
+        product_name: product.name,
+        price: product.price,
+        quantity: 1
+      };
+
+      // Send data to Telegram bot & close Mini App
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.sendData(JSON.stringify(data));
+      } else {
+        alert("This app works only inside Telegram.");
+      }
+    };
+  </script>
+</body>
+</html>
