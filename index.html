@@ -13,13 +13,13 @@
     .btn { background: #30aabc; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
     .btn:active { background: #25818a; }
     #cart-status { margin: 16px 0; color: #2e7d32; }
+    .notice { background: #ffe3e3; color: #b11; padding: 20px; margin-bottom: 20px; border-radius: 8px;}
   </style>
 </head>
 <body>
+  <div id="env-warning"></div>
   <h2>Home Decor Catalogue</h2>
-  <div id="catalogue">
-    <!-- Products will go here -->
-  </div>
+  <div id="catalogue"></div>
   <div id="cart-status"></div>
 
   <script>
@@ -29,6 +29,18 @@
       { id: 2, name: "Printed Pillow Cover", price: 349 },
       { id: 3, name: "Cotton Bedsheet", price: 1799 }
     ];
+
+    // Detect if we're inside Telegram Mini App
+    const isTelegram = window.Telegram && Telegram.WebApp;
+
+    // Optional: Show a warning if not inside Telegram
+    if (!isTelegram) {
+      document.getElementById('env-warning').innerHTML = `
+        <div class="notice">
+          <b>Note:</b> You are viewing this shop outside Telegram. Some features may not work exactly the same.
+        </div>
+      `;
+    }
 
     // Render products
     const catalogueDiv = document.getElementById('catalogue');
@@ -47,9 +59,7 @@
     window.addToCart = function(productId) {
       const product = products.find(p => p.id === productId);
       if (!product) return;
-      document.getElementById('cart-status').textContent = `${product.name} added to cart!`;
 
-      // Prepare cart data for Telegram bot
       const data = {
         action: "add_to_cart",
         product_id: product.id,
@@ -58,13 +68,27 @@
         quantity: 1
       };
 
-      // Send data to Telegram bot & close Mini App
-      if (window.Telegram && Telegram.WebApp) {
+      document.getElementById('cart-status').textContent = `${product.name} added to cart!`;
+
+      // Inside Telegram: Use sendData
+      if (isTelegram) {
+        console.log("Sending data to Telegram bot:", data);
         Telegram.WebApp.sendData(JSON.stringify(data));
       } else {
-        alert("This app works only inside Telegram.");
+        // Outside Telegram: POST to n8n webhook
+        fetch('https://dealeragent.app.n8n.cloud/webhook/657ae216-25f8-4524-975a-020ac05f6f93/webhook', { // REPLACE with your n8n webhook URL!
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(() => {
+          document.getElementById('cart-status').textContent = `${product.name} added to cart! (Sent to server)`;
+        })
+        .catch(() => {
+          document.getElementById('cart-status').textContent = `Error: could not send to server.`;
+        });
       }
-    };
+    }
   </script>
 </body>
 </html>
